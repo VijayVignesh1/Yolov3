@@ -1,5 +1,9 @@
 from model import *
 import torch
+from util import DataLoader
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
 net_info,modules=build_net('cfg/yolov3.cfg')
 # print(b[4][0].skip)
 # print(len(b))
@@ -12,14 +16,15 @@ class DarkNet(torch.nn.Module):
     def __init__(self):
         super(DarkNet, self).__init__()
         # self.blocks = parse_cfg(cfgfile)
-        self.net_info, self.module_list = build_net('yolov3.cfg')
+        self.net_info, self.module_list = build_net('cfg/yolov3.cfg')
         self.cuda="cuda"
-    def forward(self,x):
+    def forward(self,x,targets=None):
         outputs={}
         write=0
         # detections=""
         # global detections
         # detect=[]
+        
         for i in range(len(self.module_list)):
             # print(self.module_list[i])
             if "conv" in str(self.module_list[i]) or "up" in str(self.module_list[i]):
@@ -47,7 +52,13 @@ class DarkNet(torch.nn.Module):
                 inp_dim=int(self.net_info["height"])
                 num_classes=80
                 x=x.data
-                x=predict_transform(x,inp_dim,anchors,num_classes,True)
+                data=self.module_list[i][0](x,inp_dim,anchors,num_classes,True,targets)
+                # print("shape",len(x))
+                # exit(0)
+                # x=predict_transform(x,inp_dim,anchors,num_classes,True)
+                x=data[0]
+                losses=data[1:]
+                print("Loss",losses)
                 if not write:
                     # global detections
                     detections=x
@@ -56,6 +67,7 @@ class DarkNet(torch.nn.Module):
                     # print("deee",detect)
                 else:
                     # global detections
+                    # print("xxxxxxxxxxxx",data[1])
                     detections=torch.cat((detections,x),1)
                     # detect[0]=detections
             outputs[i]=x
@@ -73,7 +85,13 @@ def get_test_input():
     return img_
 
 model = DarkNet()
+data=DataLoader(416,"dog-cycle-car")
+dataloader=torch.utils.data.DataLoader(dataset=data,batch_size=1,num_workers=0)
+# print(iter(dataloader).next())
+_,target=iter(dataloader).next()
+# exit(0)
+# print(target)
 model=model.to("cuda")
 inp = get_test_input()
-pred = model(inp.cuda())
+pred = model(inp.cuda(),target.cuda())
 print (pred.shape)

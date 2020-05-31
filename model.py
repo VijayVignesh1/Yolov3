@@ -1,5 +1,6 @@
 import torch
 from util import *
+
 def build_net(cfg):
     data=open(cfg,'r')
     count=0
@@ -90,7 +91,7 @@ def build_net(cfg):
             # print(start,end,layer+start)
             # print(len(output_filters))
             filters=output_filters[layer + start + 1]
-            print(layer,filters,start,end)
+            # print(layer,filters,start,end)
             if end<0:
                 # assert output_filters[-1]==output_filters[skip]
                 # print(filters,output_filters[layer + end])
@@ -167,6 +168,6 @@ def build_net(cfg):
         # count+=1
     # print(modules)
     # print(len(output_filters))
-    print("ad",output_filters[:84])
+    # print("ad",output_filters[:84])
     # print(net_info)
     return net_info,modules
