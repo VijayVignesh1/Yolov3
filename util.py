@@ -24,7 +24,7 @@ class DetectionLayer(torch.nn.Module):
         self.anchors = anchors
         self.mse_loss = nn.MSELoss(reduction='elementwise_mean')
         self.ce_loss = nn.CrossEntropyLoss() 
-        self.lambda_coord = 5
+        self.lambda_coord = 1.0
         self.lambda_noobj = 0.5
 
     def forward(self,prediction,inp_dim,anchors,num_classes,CUDA=True,targets=None):
@@ -33,12 +33,15 @@ class DetectionLayer(torch.nn.Module):
         grid_size=inp_dim//stride
         # print(grid_size)
         bbox_attrs=5+num_classes
+        # print(prediction.shape)
         num_anchors=len(anchors)
         prediction=prediction.view(batch_size,num_anchors,bbox_attrs,grid_size,grid_size).permute(0,1,3,4,2).contiguous()
-        print(prediction.shape)
+        # print(prediction.shape)
         anchors = [(a[0]/stride, a[1]/stride) for a in anchors]
         prediction[...,0]=torch.sigmoid(prediction[...,0])
         prediction[...,1]=torch.sigmoid(prediction[...,1])
+        prediction[...,2]=torch.sigmoid(prediction[...,2])
+        prediction[...,3]=torch.sigmoid(prediction[...,3])
         prediction[...,4]=torch.sigmoid(prediction[...,4])
         prediction[...,5:]=torch.sigmoid(prediction[...,5:])
         x,y,w,h,pred_conf,pred_cls=prediction[...,0],prediction[...,1],prediction[...,2],prediction[...,3],prediction[...,4],prediction[...,5:]
@@ -58,8 +61,8 @@ class DetectionLayer(torch.nn.Module):
         if CUDA:
             anchor_h=anchor_h.cuda()
             anchor_w=anchor_w.cuda()
-        prediction[:,:,2] = torch.exp(prediction[:,:,2])*anchor_w
-        prediction[:,:,3] = torch.exp(prediction[:,:,3])*anchor_h
+        prediction[...,2] = torch.exp(prediction[...,2])*anchor_w
+        prediction[...,3] = torch.exp(prediction[...,3])*anchor_h
         # print("Forward",prediction.shape)
         # print(targets)
         
@@ -83,6 +86,14 @@ class DetectionLayer(torch.nn.Module):
         conf_mask_false=(conf_mask-mask).type(torch.ByteTensor)
         tconf=tconf.float()
         mask=mask.type(torch.ByteTensor)
+    
+        tx = Variable(tx, requires_grad=False)
+        ty = Variable(ty, requires_grad=False)
+        tw = Variable(tw, requires_grad=False)
+        th = Variable(th, requires_grad=False)
+        tconf = Variable(tconf, requires_grad=False)
+        tcls = Variable(tcls, requires_grad=False)
+
         if CUDA:
             tx=tx.cuda()
             ty=ty.cuda()
@@ -100,38 +111,14 @@ class DetectionLayer(torch.nn.Module):
         loss_cls=(1/batch_size)*(self.ce_loss(pred_cls[mask],torch.argmax(tcls[mask],1)))
 
         loss=loss_x+loss_y+loss_w+loss_h+loss_conf+loss_cls
-        return pred,loss,loss_x.item(),loss_y.item(),loss_w.item(),loss_h.item(),loss_conf.item(),loss_cls.item(),recall,precision
+        recall/=3
+        precision/=3
+        return [loss,loss_x.item(),loss_y.item(),loss_w.item(),loss_h.item(),loss_conf.item(),loss_cls.item(),recall,precision]
+        # return [pred,loss,loss_x.item(),loss_y.item(),loss_w.item(),loss_h.item(),loss_conf.item(),loss_cls.item(),recall,precision]
         
-class DataLoader(Dataset):
-    def __init__(self,img_size,train_path,is_train=True):
-        # print("hi")
-        self.img_size=img_size
-        self.img_shape=(self.img_size,self.img_size)
-        self.max_objects=50
-        self.is_train=is_train
-        self.train_path=train_path
-    def __getitem__(self,index):
-        img=cv2.imread(self.train_path+".png")
-        # print(img)
-        img=cv2.resize(img,self.img_shape)
-        img=np.transpose(img,(2,0,1))
-        img=torch.from_numpy(img).float()
-
-        labels=np.loadtxt(self.train_path+".txt")
-        # labels[:,1]*=self.img_size
-        # labels[:,2]*=self.img_size
-        # labels[:,3]*=self.img_size
-        # labels[:,4]*=self.img_size
-        filled_labels=np.zeros((self.max_objects,5))
-        filled_labels[range(len(labels))[:self.max_objects]]=labels[:self.max_objects]
-        filled_labels=torch.from_numpy(filled_labels)
-        # print(filled_labels)
-        return img,filled_labels
-    def __len__(self):
-        return 1
-
 def TargetsReady(pred_coord,pred_conf,pred_class,targets,anchors,num_anchors,num_classes,grid_size,ignore_thresh,img_size):
     batch_size=targets.size(0)
+    # print(targets.shape)
     mask=torch.zeros(batch_size,num_anchors,grid_size,grid_size)
     conf_mask=torch.ones(batch_size,num_anchors,grid_size,grid_size)
     tx=torch.zeros(batch_size,num_anchors,grid_size,grid_size)
@@ -155,16 +142,27 @@ def TargetsReady(pred_coord,pred_conf,pred_class,targets,anchors,num_anchors,num
             gh=targets[batch,target,4]*grid_size
             # print(gw)
             # gw=gw.float()
+            # print(targets[batch,target,3],targets[batch,target,4])
+
             # gh=gh.float()
             gi=gx.int()
             gj=gy.int()
-
+            if gi>=13:
+                gi=12
+            if gj>=13:
+                gj=12
+            # print(gx,gy,gi,gj)
+            # exit(0)
             # gt_box=[(0,0),(gw,gh)]
 
             # anchor_boxes=[]
             gt_box=torch.FloatTensor([0,0,gw,gh]).unsqueeze(0)
             anchor_box=torch.FloatTensor(np.concatenate((np.zeros((len(anchors),2)),np.array(anchors)),1))
-            anchor_iou=IOU(gt_box,anchor_box)
+            anchor_iou=IOU(gt_box,anchor_box) ##uncomment
+            # print(anchor_iou)
+            # temp1=torch.FloatTensor([gw-0.2,gh-0.2,gw,gh]).unsqueeze(0)
+            # print("IOU",IOU(gt_box,temp1))
+            # exit(0)
             # print("Anchor",anchor_iou)
             conf_mask[batch,anchor_iou>ignore_thresh,gj,gi]=0
             best=np.argmax(anchor_iou)
@@ -187,6 +185,10 @@ def TargetsReady(pred_coord,pred_conf,pred_class,targets,anchors,num_anchors,num
 
             iou=IOU(gt_box,pred_box,True)
 
+            # print(gt_box,pred_box)
+            # print(iou)
+            # exit(0)
+
             pred_label=torch.argmax(pred_class[batch,best,gj,gi])
             score=pred_conf[batch,best,gj,gi]
 
@@ -202,19 +204,23 @@ def IOU(box1,box2,center=False):
         b1_y1,b1_y2 = box1[:,1]-box1[:,3]/2,box1[:,1]+box1[:,3]/2
         b2_y1,b2_y2 = box2[:,1]-box2[:,3]/2,box2[:,1]+box2[:,3]/2
     else:
-        b1_x1,b1_x2,b1_y1,b1_y2=box1[:,0],box1[:,1],box1[:,2],box1[:,3]
-        b2_x1,b2_x2,b2_y1,b2_y2=box2[:,0],box2[:,1],box2[:,2],box2[:,3]
+        b1_x1,b1_x2,b1_y1,b1_y2=box1[:,0],box1[:,2],box1[:,1],box1[:,3]
+        b2_x1,b2_x2,b2_y1,b2_y2=box2[:,0],box2[:,2],box2[:,1],box2[:,3]
+    # print(b1_x1,b1_x2,b1_y1,b1_y2)
+    # print(b2_x1,b2_x2,b2_y1,b2_y2)
     i_x1=torch.max(b1_x1,b2_x1)
     i_y1=torch.max(b1_y1,b2_y1)
     i_x2=torch.min(b1_x2,b2_x2)
     i_y2=torch.min(b1_y2,b2_y2)
-
-    area=(i_x2-i_x1+1)*(i_y2-i_y1+1)
+    # print(i_x1,i_x2,i_y1,i_y2)
+    # print("sahpe",i_x2.shape)
+    zero=torch.zeros((i_x2.shape))
+    area=torch.max(zero,i_x2-i_x1+1)*torch.max(zero,i_y2-i_y1+1)
 
     box1Area=(b1_x2-b1_x1+1)*(b1_y2-b1_y1+1)
     box2Area=(b2_x2-b2_x1+1)*(b2_y2-b2_y1+1)
         
-    iou=area/(box1Area+box2Area-area)
+    iou=area/(box1Area+box2Area-area+1e-16)
 
     return iou
 

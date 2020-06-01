@@ -5,6 +5,7 @@ def build_net(cfg):
     data=open(cfg,'r')
     count=0
     lines=data.readlines()
+    # print(len(lines))
     # print(lines)
     # exit(0)
     layer=0
@@ -121,6 +122,7 @@ def build_net(cfg):
             layer+=1
 
         elif lines[i][1:-2]=="yolo":
+            # print(lines[i])
             i+=1
             temp={}
             seq=torch.nn.Sequential()
@@ -167,7 +169,7 @@ def build_net(cfg):
         #     break
         # count+=1
     # print(modules)
-    # print(len(output_filters))
+    # print(output_filters)
     # print("ad",output_filters[:84])
     # print(net_info)
     return net_info,modules

@@ -1,10 +1,12 @@
 from model import *
 import torch
-from util import DataLoader
+from dataloader import DataLoader
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
-net_info,modules=build_net('cfg/yolov3.cfg')
+# net_info,modules=build_net('cfg/yolov3.cfg')
+# net_info,modules=build_net('cfg/yolov3-spp - tiny.cfg')
+
 # print(b[4][0].skip)
 # print(len(b))
         
@@ -16,16 +18,19 @@ class DarkNet(torch.nn.Module):
     def __init__(self):
         super(DarkNet, self).__init__()
         # self.blocks = parse_cfg(cfgfile)
-        self.net_info, self.module_list = build_net('cfg/yolov3.cfg')
+        self.net_info, self.module_list = build_net('cfg/yolov3 - Copy.cfg')
         self.cuda="cuda"
+        self.losses=np.array([0,0,0,0,0,0,0,0])
     def forward(self,x,targets=None):
+        train_output=[]
         outputs={}
         write=0
         # detections=""
         # global detections
         # detect=[]
-        
+        self.losses=np.array([0,0,0,0,0,0,0,0])
         for i in range(len(self.module_list)):
+            # print(train_output)
             # print(self.module_list[i])
             if "conv" in str(self.module_list[i]) or "up" in str(self.module_list[i]):
                 x=self.module_list[i](x)
@@ -50,30 +55,41 @@ class DarkNet(torch.nn.Module):
             elif "detection" in str(self.module_list[i]):
                 anchors=self.module_list[i][0].anchors
                 inp_dim=int(self.net_info["height"])
-                num_classes=80
+                # num_classes=80
+                num_classes=1
                 x=x.data
-                data=self.module_list[i][0](x,inp_dim,anchors,num_classes,True,targets)
-                # print("shape",len(x))
-                # exit(0)
-                # x=predict_transform(x,inp_dim,anchors,num_classes,True)
-                x=data[0]
-                losses=data[1:]
-                print("Loss",losses)
-                if not write:
-                    # global detections
-                    detections=x
-                    write=1
-                    # detect.append(detections)
-                    # print("deee",detect)
+                if targets is not None:
+                    data=self.module_list[i][0](x,inp_dim,anchors,num_classes,True,targets)
+                    # x,loss=self.module_list[i][0](x,inp_dim,anchors,num_classes,True,targets)
+
+                    # x=predict_transform(x,inp_dim,anchors,num_classes,True)
+                    x=data[0]
+                    loss=np.array(data[1:])
+                    # print(data)
+                    
+
+                    self.losses=np.sum((self.losses,loss),axis=0)
+                
+                    train_output.append(x)
                 else:
-                    # global detections
-                    # print("xxxxxxxxxxxx",data[1])
-                    detections=torch.cat((detections,x),1)
-                    # detect[0]=detections
+                    x=self.module_list[i][0](x,inp_dim,anchors,num_classes,True,None)
+                    if not write:
+                        # global detections
+                        detections=x
+                        write=1
+                        # detect.append(detections)
+                        # print("deee",detect)
+                    else:
+                        # global detections
+                        # print("xxxxxxxxxxxx",data[1])
+                        detections=torch.cat((detections,x),1)
+                        # detect[0]=detections
             outputs[i]=x
             # print(i,x.shape)
         # global detections
-        return detections
+        for i in train_output:
+            i.requires_grad=True
+        return detections if targets is None else sum(train_output)
 
 def get_test_input():
     img = cv2.imread("dog-cycle-car.png")
@@ -85,13 +101,34 @@ def get_test_input():
     return img_
 
 model = DarkNet()
-data=DataLoader(416,"dog-cycle-car")
-dataloader=torch.utils.data.DataLoader(dataset=data,batch_size=1,num_workers=0)
+data=DataLoader(416,"data/train")
+dataloader=torch.utils.data.DataLoader(dataset=data,batch_size=8,num_workers=0)
 # print(iter(dataloader).next())
-_,target=iter(dataloader).next()
+"""
+inp,target=iter(dataloader).next()
+# print(inp.shape)
 # exit(0)
 # print(target)
 model=model.to("cuda")
-inp = get_test_input()
+# inp = get_test_input()
+print(inp.shape)
 pred = model(inp.cuda(),target.cuda())
-print (pred.shape)
+print (pred)
+"""
+
+model=model.to("cuda")
+optimizer=torch.optim.Adam(model.parameters(),lr=1e-5)
+for param in model.parameters():
+    param.requires_grad = True
+for epoch in range(1):
+    for batch_id,(imgs,target) in enumerate(dataloader):
+        imgs=imgs.cuda()
+        target=target.cuda()
+        optimizer.zero_grad()
+        loss=model(imgs,target)
+        loss.backward()
+        optimizer.step()
+        if batch_id%10==0:
+            print(loss)
+            print(model.losses)
+        
