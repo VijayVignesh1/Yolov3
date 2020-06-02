@@ -3,7 +3,7 @@ import json
 import cv2
 import os
 import tqdm
-img=cv2.imread("data/train2017/000000391895.jpg")
+# img=cv2.imread("data/train2017/000000391895.jpg")
 # x=359/640
 # y=146/360
 # w=112/640
@@ -19,9 +19,9 @@ img=cv2.imread("data/train2017/000000391895.jpg")
 # exit(0)
 file=open("data/annotations/instances_train2017.json",'r')
 data=json.load(file)
-print(len(data["images"]))
-print(data["annotations"][0])
-print(data["images"][0])
+# print(len(data["images"]))
+# print(data["annotations"][0])
+# print(data["images"][0])
 images={}
 key=["filename","height","width","bbox"]
 
@@ -37,8 +37,8 @@ for i in data["annotations"]:
     i['bbox'].insert(0,str(i['category_id']-1))
     images[i['image_id']].append(i['bbox'])
 
-print(len(images.keys()))
-print(images[391895])
+# print(len(images.keys()))
+# print(images[391895])
 folder="data/train2017/"
 for i in tqdm.tqdm(images):
     txt=open(os.path.join(folder,images[i][0]+".txt"),'w')
