@@ -3,6 +3,13 @@ import json
 import cv2
 import os
 import tqdm
+import glob
+def is_file_empty(file_path):
+    """ Check if file is empty by confirming if its size is 0 bytes"""
+    # Check if file exist and it is empty
+    return os.path.exists(file_path) and os.stat(file_path).st_size == 0
+
+
 # img=cv2.imread("data/train2017/000000391895.jpg")
 # x=359/640
 # y=146/360
@@ -48,6 +55,22 @@ for i in tqdm.tqdm(images):
         temp=map(str,j)
         txt.write(" ".join(temp)+"\n")
     
+text_files=glob.glob("data/train2017/*.txt")
+temp=0
+for i in tqdm.tqdm(text_files):
+    # a=open(i,'r')
+    if is_file_empty(i):
+        os.remove(i)
+        img="data/train2017/"+os.path.basename(i).rsplit(".")[0]
+        img+=".jpg"
+        os.remove(img)
+        print(i,img)
+        temp+=1
+# print(temp)
+text_files=glob.glob("data/train2017/*.txt")
+jpg_files=glob.glob("data/train2017/*.jpg")
+assert len(text_files)==len(jpg_files),"Image and Text file number mismatch"
+
 """
 print(images[391895])
 temp=images[391895]

@@ -8,7 +8,13 @@ import numpy as np
 import cv2
 from torch.utils.data import Dataset
 import math
+import matplotlib.pyplot as plt
 
+def showTensor(aTensor):
+    plt.figure()
+    plt.imshow(aTensor.numpy())
+    plt.colorbar()
+    plt.show()
 class EmptyLayer(torch.nn.Module):
     def __init__(self, is_route=False, is_shortcut=False,start=1,end=1,skip=1):
         super(EmptyLayer, self).__init__()
@@ -24,10 +30,11 @@ class DetectionLayer(torch.nn.Module):
         self.anchors = anchors
         self.mse_loss = nn.MSELoss(reduction='elementwise_mean')
         self.ce_loss = nn.CrossEntropyLoss() 
-        self.lambda_coord = 1.0
+        self.lambda_coord = 5.0
         self.lambda_noobj = 0.5
 
     def forward(self,prediction,inp_dim,anchors,num_classes,CUDA=True,targets=None):
+        # print(prediction)
         batch_size=prediction.size(0)
         stride=inp_dim//prediction.size(2)
         grid_size=inp_dim//stride
@@ -38,32 +45,54 @@ class DetectionLayer(torch.nn.Module):
         prediction=prediction.view(batch_size,num_anchors,bbox_attrs,grid_size,grid_size).permute(0,1,3,4,2).contiguous()
         # print(prediction.shape)
         anchors = [(a[0]/stride, a[1]/stride) for a in anchors]
+        # print(torch.max(prediction[...,0]))
+        # print(torch.sigmoid(prediction[...,0]))
         prediction[...,0]=torch.sigmoid(prediction[...,0])
         prediction[...,1]=torch.sigmoid(prediction[...,1])
-        prediction[...,2]=torch.sigmoid(prediction[...,2])
-        prediction[...,3]=torch.sigmoid(prediction[...,3])
+        # prediction[...,2]=prediction[...,2]
+        # prediction[...,3]=prediction[...,3]
         prediction[...,4]=torch.sigmoid(prediction[...,4])
         prediction[...,5:]=torch.sigmoid(prediction[...,5:])
-        x,y,w,h,pred_conf,pred_cls=prediction[...,0],prediction[...,1],prediction[...,2],prediction[...,3],prediction[...,4],prediction[...,5:]
+        # print(torch.max(prediction[...,0]))
+        x,y,w,h,pred_conf,pred_cls=prediction[...,0].clone(),prediction[...,1].clone(),prediction[...,2].clone(),prediction[...,3].clone(),prediction[...,4],prediction[...,5:]
+        # print(torch.max(x))
+        
         grid = np.arange(grid_size)
         a,b = np.meshgrid(grid, grid)
 
         x_offset = torch.FloatTensor(a).view(1,1,grid_size,grid_size)
         y_offset = torch.FloatTensor(b).view(1,1,grid_size,grid_size)
-        x_y_offset = torch.cat((x_offset, y_offset), 1).repeat(1,num_anchors,1,1).view(1,num_anchors,grid_size,grid_size,2)
         if CUDA:
-            x_y_offset=x_y_offset.cuda()
-        prediction[...,:2]+=x_y_offset
+            x_offset=x_offset.cuda()
+            y_offset=y_offset.cuda()
+        # x_y_offset = torch.cat((x_offset, y_offset), 1).repeat(1,num_anchors,1,1).view(1,num_anchors,grid_size,grid_size,2)
+        # if CUDA:
+        #     x_y_offset=x_y_offset.cuda()
+        prediction[...,0]=x.detach()+x_offset
+        prediction[...,1]=y.detach()+y_offset
+        
 
+        # grid_x = torch.arange(grid_size).repeat(grid_size, 1).view([1, 1, grid_size, grid_size]).type(torch.FloatTensor).cuda()
+        # grid_y = torch.arange(grid_size).repeat(grid_size, 1).t().view([1, 1, grid_size, grid_size]).type(torch.FloatTensor).cuda()
+        # prediction[...,0]=x.data+grid_x
+        # prediction[...,1]=y.data+grid_y
+        # print(grid_y==y_offset.cuda())
+        # print(torch.cat((x.data,y.data),1).shape)
+        # exit(0)
         anchors = torch.FloatTensor(anchors)
         anchor_w=anchors[:,0:1].view((1,num_anchors,1,1))
         anchor_h=anchors[:,1:2].view((1,num_anchors,1,1))
+        # print('anchors',anchor_w,anchor_h)
+        # exit(0)
         if CUDA:
             anchor_h=anchor_h.cuda()
             anchor_w=anchor_w.cuda()
-        prediction[...,2] = torch.exp(prediction[...,2])*anchor_w
-        prediction[...,3] = torch.exp(prediction[...,3])*anchor_h
-        # print("Forward",prediction.shape)
+        # print("Forward",torch.max(prediction[...,2]),torch.max(w))
+        # print("pred3",torch.max(prediction[...,2]))
+        prediction[...,2] = torch.exp(w.detach())*anchor_w
+        prediction[...,3] = torch.exp(h.detach())*anchor_h
+        # print("Forward",torch.max(prediction[...,2]),torch.max(w))
+        # exit(0)
         # print(targets)
         
         pred=torch.cat((prediction[...,:4].view(batch_size,-1,4) * stride,
@@ -74,9 +103,11 @@ class DetectionLayer(torch.nn.Module):
         # print("return shape",pred.shape)
         if targets is None:
             return pred
-
+        # print("pred3",torch.max(prediction[...,2]))
         num_obj,num_correct,mask,conf_mask,tx,ty,tw,th,tconf,tcls=TargetsReady(prediction[...,:4].cpu().data,prediction[...,4].cpu().data,prediction[...,5:],targets.cpu().data,anchors,num_anchors,
                     num_classes,grid_size,0.5,416)
+        # print("tw",torch.max(tw))
+        # exit(0)
         tcls=tcls.type(torch.LongTensor)
         num_prop=int((pred_conf>0.5).sum().item())
         recall=float(num_correct/num_obj) if num_obj else 1
@@ -101,13 +132,43 @@ class DetectionLayer(torch.nn.Module):
             th=th.cuda()
             tconf=tconf.cuda()
             tcls=tcls.cuda()
-        loss_x=self.lambda_coord*self.mse_loss(x[mask],tx[mask])
-        loss_y=self.lambda_coord*self.mse_loss(y[mask],ty[mask])
-        loss_w=self.lambda_coord*self.mse_loss(w[mask],tw[mask])
-        loss_h=self.lambda_coord*self.mse_loss(h[mask],th[mask])
+            self.mse_loss=self.mse_loss.cuda()
+            self.ce_loss=self.ce_loss.cuda()
+        
+        # print(mask.shape)
+        # showTensor(x[mask].cpu().detach())
+        # print(torch.max(x))
+        # print(torch.max(y))
+        # print(torch.max(w))
+        # print(torch.max(h))
 
-        loss_conf=self.lambda_noobj*(self.mse_loss(pred_conf[conf_mask_false],tconf[conf_mask_false])
-                                    +self.mse_loss(pred_conf[conf_mask_true],tconf[conf_mask_true]))
+        # print("tx",torch.max(tx))
+        # print("ty",torch.max(ty))
+        # print("tw",torch.max(tw))
+        # print("th",torch.max(th))
+        
+
+
+        # # print(grid_x[0][0])
+        # # print(x.data)
+        # print(w.shape)
+        # print(x.shape)
+        # self.mse_loss(x[mask],tx[mask]).requires_grad=True
+        # print(self.mse_loss.requires_grad)
+        # print("Loss",self.mse_loss(x[mask],tx[mask]))
+        # print("Loss",self.mse_loss(y[mask],ty[mask]))
+        # print("Loss",self.mse_loss(w[mask],tw[mask]))
+        # print("Loss",self.mse_loss(h[mask],th[mask]))
+        # print("Loss",self.ce_loss(pred_cls[mask],torch.argmax(tcls[mask],1)))
+        # exit(0)
+        
+        loss_x=(self.lambda_coord*self.mse_loss(x[mask],tx[mask]))/batch_size
+        loss_y=(self.lambda_coord*self.mse_loss(y[mask],ty[mask]))/batch_size
+        loss_w=(self.lambda_coord*self.mse_loss(w[mask],tw[mask]))/batch_size
+        loss_h=(self.lambda_coord*self.mse_loss(h[mask],th[mask]))/batch_size
+
+        loss_conf=(self.lambda_noobj*(self.mse_loss(pred_conf[conf_mask_false],tconf[conf_mask_false])
+                                    +self.mse_loss(pred_conf[conf_mask_true],tconf[conf_mask_true])))/batch_size
         loss_cls=(1/batch_size)*(self.ce_loss(pred_cls[mask],torch.argmax(tcls[mask],1)))
 
         loss=loss_x+loss_y+loss_w+loss_h+loss_conf+loss_cls
@@ -119,6 +180,8 @@ class DetectionLayer(torch.nn.Module):
 def TargetsReady(pred_coord,pred_conf,pred_class,targets,anchors,num_anchors,num_classes,grid_size,ignore_thresh,img_size):
     batch_size=targets.size(0)
     # print(targets.shape)
+    # print(grid_size)
+    # exit(0)
     mask=torch.zeros(batch_size,num_anchors,grid_size,grid_size)
     conf_mask=torch.ones(batch_size,num_anchors,grid_size,grid_size)
     tx=torch.zeros(batch_size,num_anchors,grid_size,grid_size)
@@ -132,25 +195,45 @@ def TargetsReady(pred_coord,pred_conf,pred_class,targets,anchors,num_anchors,num
     num_correct=0
     for batch in range(batch_size):
         for target in range(targets.shape[1]):
-            if target==None:
+            if targets[batch,target,:].sum()==0:
                 continue
             num_gt+=1
+            
             # print("gy",targets[batch,target,1],targets[batch,target,2])
+            # print("target",targets[batch,target,:])
             gx=targets[batch,target,1]*grid_size
             gy=targets[batch,target,2]*grid_size
             gw=targets[batch,target,3]*grid_size
             gh=targets[batch,target,4]*grid_size
-            # print(gw)
+
+            # print(gx)
+            # print(gy)
+
+            # print(anchors)
+            # print(gh)
+            # exit(0)
             # gw=gw.float()
             # print(targets[batch,target,3],targets[batch,target,4])
 
             # gh=gh.float()
             gi=gx.int()
             gj=gy.int()
+            # print(gx.type(torch.IntTensor))
+            # print(gw)
+            # print(gh)
+            # print(gi)
+            # print(gj)
+            # print(anchors)
+            if gi>=grid_size or gj>=grid_size:
+                print("gi",gi)
+                print("gj",gj)
+            # exit(0)
+            """
             if gi>=13:
                 gi=12
             if gj>=13:
                 gj=12
+            """
             # print(gx,gy,gi,gj)
             # exit(0)
             # gt_box=[(0,0),(gw,gh)]
@@ -173,16 +256,27 @@ def TargetsReady(pred_coord,pred_conf,pred_class,targets,anchors,num_anchors,num
             mask[batch,best,gj,gi]=1
             conf_mask[batch,best,gj,gi]=1
 
+            # print(gw)
 
+            # exit(0)
             tx[batch,best,gj,gi]=gx-gi
             ty[batch,best,gj,gi]=gy-gj
+            # print(targets[batch,target,3])
+            # print("gw before",gw)
+            # print("anchors",anchors[best][0])
+            # print("log",math.log(gw / anchors[best][0] + 1e-16))
             tw[batch,best,gj,gi]=math.log(gw / anchors[best][0] + 1e-16)
             th[batch,best,gj,gi]=math.log(gh / anchors[best][1] + 1e-16)
-
+            # print("tw after",torch.max(tw))
+            # exit(0)
+            # print(torch.max(tw))
+            # exit(0)
             label=int(targets[batch,target,0])
             tcls[batch,best,gj,gi,label]=1
             tconf[batch,best,gj,gi]=1
-
+            # print(pred_box,gt_box)
+            # print(pred_coord.shape)
+            # exit(0)
             iou=IOU(gt_box,pred_box,True)
 
             # print(gt_box,pred_box)

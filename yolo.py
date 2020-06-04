@@ -52,14 +52,17 @@ class DarkNet(torch.nn.Module):
                 # print(outputs[i-1].shape,outputs[i+skip+1].shape)
                 # print(skip,i)
                 x=outputs[i-1]+outputs[i+(skip)]
+                # print(x)
             elif "detection" in str(self.module_list[i]):
                 anchors=self.module_list[i][0].anchors
                 inp_dim=int(self.net_info["height"])
                 # num_classes=80
-                num_classes=1
-                x=x.data
+                num_classes=91
+                # x=x.data
                 if targets is not None:
+                    # print(x)
                     data=self.module_list[i][0](x,inp_dim,anchors,num_classes,True,targets)
+                    # print(x)
                     # x,loss=self.module_list[i][0](x,inp_dim,anchors,num_classes,True,targets)
 
                     # x=predict_transform(x,inp_dim,anchors,num_classes,True)
@@ -87,8 +90,9 @@ class DarkNet(torch.nn.Module):
             outputs[i]=x
             # print(i,x.shape)
         # global detections
-        for i in train_output:
-            i.requires_grad=True
+        # for i in train_output:
+        #     i.requires_grad=True
+        # print("Train",train_output)
         return detections if targets is None else sum(train_output)
 
 def get_test_input():
@@ -100,35 +104,4 @@ def get_test_input():
     img_ = Variable(img_)                     # Convert to Variable
     return img_
 
-model = DarkNet()
-data=DataLoader(416,"data/train")
-dataloader=torch.utils.data.DataLoader(dataset=data,batch_size=8,num_workers=0)
-# print(iter(dataloader).next())
-"""
-inp,target=iter(dataloader).next()
-# print(inp.shape)
-# exit(0)
-# print(target)
-model=model.to("cuda")
-# inp = get_test_input()
-print(inp.shape)
-pred = model(inp.cuda(),target.cuda())
-print (pred)
-"""
 
-model=model.to("cuda")
-optimizer=torch.optim.Adam(model.parameters(),lr=1e-5)
-for param in model.parameters():
-    param.requires_grad = True
-for epoch in range(1):
-    for batch_id,(imgs,target) in enumerate(dataloader):
-        imgs=imgs.cuda()
-        target=target.cuda()
-        optimizer.zero_grad()
-        loss=model(imgs,target)
-        loss.backward()
-        optimizer.step()
-        if batch_id%10==0:
-            print(loss)
-            print(model.losses)
-        

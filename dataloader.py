@@ -40,6 +40,7 @@ class DataLoader(Dataset):
         self.is_train=is_train
         self.train_path=train_path
         self.images=glob.glob(self.train_path+"/*.jpg")
+        self.images=self.images[:1000]
         # annotation=glob.glob(self.train_path+"/*.txt")
         self.total_train=len(self.images)
     def __getitem__(self,index):
@@ -71,6 +72,8 @@ class DataLoader(Dataset):
         tensor_image=tensor_image.permute(2,0,1)
         tensor_image/=255.
         # print(tensor_image.shape)
+        if len(points)==0:
+            print(points_path,points)
         filled_labels=np.zeros((self.max_objects,5))
         filled_labels[range(len(points))[:self.max_objects]]=points[:self.max_objects]
         filled_labels=torch.from_numpy(filled_labels)
