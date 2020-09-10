@@ -27,18 +27,22 @@ Yolov3
 2. If you already have a checkpoint file, include it in train.py. (checkpoint=checkpoint_file) <br>
 3. Change the other model parameters, if necessary, in train.py file. <br>
 4. Run the following command and watch the magic. :sunglasses: <br>
+
 ```.bash
 python train.py
 ```
+
 ---------------------------------
 
 ## Steps to Predict
 1. Change the testing image in predict.py. <br>
 2. Include the desired checkpoint to be used in predict.py. <br>
 3. Run the following command and watch the model magically detect the hands. :grinning: <br>
+
 ```.bash
 python predict.py
 ```
+
 ----------------------------------
 
 ## Results
@@ -51,7 +55,8 @@ Below are the result of training the model on a small subset of Oxford Hands Dat
 <p align="center">
 <img src="images/Result.jpg">
 </p>
-With a little tweaking, the model can be trained on other datasets as well. :wink: <br>
+<br>
+With a little tweaking, the model can be trained on other datasets as well. :wink: <br> 
 
 Go ahead, pull it, train it and have fun. :smiley: <br>
 
