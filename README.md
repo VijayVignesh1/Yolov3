@@ -1,4 +1,4 @@
-# YOLOv3 
+# YOLOv3-PyTorch
 <p align="center">
 <img  src="images/yolov3.png">
 </p>
