@@ -1,10 +1,13 @@
 import torch
 from yolo import DarkNet
 import cv2
-from util import IOU,bboxIOU
+from util import IOU
 import numpy as np
 
 def nonMaxSuppression(prediction, confidence, num_classes, nms = True, nms_conf = 0.4):
+    """ Performs Non Maximal Suppression on the given prediction """
+
+    # Ignore the prediction with values less than treshold
     conf_mask = (prediction[:,:,4] > confidence).float().unsqueeze(2)
     prediction = prediction*conf_mask
     try:
@@ -25,6 +28,7 @@ def nonMaxSuppression(prediction, confidence, num_classes, nms = True, nms_conf 
     write = False
 
     for ind in range(batch_size):
+        # For every predicted class ignore the box of low prediction confidence if two boxes of same class overlap more than threshold
         image_pred = prediction[ind]
         
         max_conf, max_conf_score = torch.max(image_pred[:,5:5+ num_classes], 1)
@@ -46,6 +50,7 @@ def nonMaxSuppression(prediction, confidence, num_classes, nms = True, nms_conf 
             
             image_pred_class = image_pred_[class_mask_ind].view(-1,7)
 
+            # Sort the boxes of the same class, helps in deciding which box to drop in case of overlap
             conf_sort_index = torch.sort(image_pred_class[:,4], descending = True )[1]
             image_pred_class = image_pred_class[conf_sort_index]
             idx = image_pred_class.size(0)
@@ -79,163 +84,97 @@ def nonMaxSuppression(prediction, confidence, num_classes, nms = True, nms_conf 
 
 
 def unique_rows(data):
+    """ Return the unique rows of the given data """
     uniq = np.unique(data.view(data.dtype.descr * data.shape[1]))
     return uniq.view(data.dtype).reshape(-1, data.shape[1])
 
 def predict(img, prediction, conf_thresh, num_classes):
-    # print(prediction)
+    """ Predicts the bounding box using the given prediction"""
+
+    # Bring the given prediction in proper format
     prediction=prediction.data.cpu()
-    # print(prediction[:5])
-    # exit(0)
-    # output=nonMaxSuppression(prediction,0.5,91)
-    # print(output)
-    # exit(0)
-    # print(prediction[:,:,4])
     conf=(prediction[:,:,4]>conf_thresh).float().unsqueeze(2)
     prediction*=conf
-    # print(prediction[:,:,4].nonzero()[:,1])
-    # print(prediction[prediction[:,:,4].nonzero()[:,1]].shape)
-    # exit(0)
     box_corner = prediction.new(prediction.shape)
     box_corner[:,:,0] = (prediction[:,:,0] - prediction[:,:,2]/2)
     box_corner[:,:,1] = (prediction[:,:,1] - prediction[:,:,3]/2)
     box_corner[:,:,2] = (prediction[:,:,0] + prediction[:,:,2]/2) 
     box_corner[:,:,3] = (prediction[:,:,1] + prediction[:,:,3]/2)
-    # box_corner[box_corner<0]=0
     prediction[:,:,:4] = box_corner[:,:,:4]
-    
-    # print(box_corner)
-    # exit(0)
+
     for i in range(prediction.shape[0]):
+
+        # Pluck out all the non zeros predictions and find the class it belongs to
         nonzero_index=prediction[i,:,4].data.cpu().nonzero()
         final_pred=prediction[i,nonzero_index.squeeze(1)]
-        # exit(0)
         classes=final_pred[:,5:]
-        # print(classes.shape)
         scores,classes=torch.max(classes,dim=1)
-        # print(classes)
         scores=scores.data
         classes=classes.data
         classes=classes.detach().cpu().numpy()
-        # print(set(classes))
         dictionary={}
         index=torch.sort(final_pred[:,4],descending=True)[1]
         final_pred=final_pred[index]
-        # print(final_pred)
-        # final_pred=final_pred[final_pred[:,3]>0.0]
-        # print(final_pred.shape)
-        # exit(0)
-        # x,y,x1,y1=final_pred[0][0].numpy(),final_pred[0][1].numpy(),final_pred[0][2].numpy(),final_pred[0][2].numpy()
-        # print(x,y,x1,y1)
-        # cv2.rectangle(img,(int(x),int(y)),(int(x1),int(y1)),(0,255,0),2)
-        # cv2.imshow('',img)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-        # exit(0)
+
+        # Find the list of coordinates for every class
         for j in range(final_pred.shape[0]):
             temp_classes=final_pred[j,5:]
             temp_score,temp_cls=torch.max(temp_classes.unsqueeze(0),1)
             temp_cls=str(temp_cls.data.cpu().numpy()[0])
             temp_coord=final_pred[j,:4].data.cpu().numpy()
-            # print(temp_cls)
             if temp_cls in dictionary:
                 dictionary[temp_cls].append(list(temp_coord))
-                # print(dictionary[temp_cls])
-                # exit(0)
             else:
                 dictionary[temp_cls]=[list(temp_coord)]
-            # if temp.cls.data.cpu() in dictionary.keys()
-            # exit(0)
-        # print(dictionary['0'][0])
-        # exit(0)
-        # print(dictionary['0'][-5:])
-        # print(bboxIOU(torch.Tensor([0,0,0,0]).unsqueeze(0),torch.Tensor([0,0,0,0]).unsqueeze(0),True))
-        # exit(0)
-        
+
+        # For every class find if any two bounding boxes are overlapping more than the threshold using the IOU and drop the box with 
+        # low confidence
         for k in dictionary:
             count=0
             while count+2!=len(dictionary[k]):
-                # try:
-                # print(torch.Tensor(dictionary[k][count]).unsqueeze(0).shape,torch.Tensor(dictionary[k][count+1:]).shape)
-                # exit(0)
-                # print(len(dictionary[k][count+1:]))
-
                 compare_tens=torch.Tensor(dictionary[k][count+1:])
                 if compare_tens.shape==torch.Size([0]):
                     break
-                # print(compare_tens.shape==torch.Size([0]))
+
                 ious=IOU(torch.Tensor(dictionary[k][count]).unsqueeze(0),torch.Tensor(dictionary[k][count+1:]))
                 ious=ious.unsqueeze(1)
                 ious=ious.numpy()
-                # print("box",torch.Tensor(dictionary[k][count]))
-                # print("ious",ious.shape)
-                
-                # print(ious[:5])
                 conf=(ious<0.02)
-                # print(conf)
-                # exit(0)
 
                 tmp=[list(compare_tens[i].numpy()) for i in range(len(conf)) if conf[i]==True]
-                # print(1<0.04)
-                # tmp=[]
-                # for i in range(len(conf)):
-                #     if conf[i]==True:
-                #         print(compare_tens[i])
-                #         tmp.append(compare_tens[i])
-
-                # print(len(tmp))
-                # print("tmp",tmp)
-                # exit(0)
-                # print(len(dictionary[k][:count+1]))
-                # print(dictionary[k][:5])
                 dictionary[k]=dictionary[k][:count+1]+tmp
-                # print(dictionary[k][:5])
-                # dictionary[k][count+1:]=dictionary[k][ious<0.6]
                 count+=1  
-                # except:
-                #     print(len(dictionary[k]))
-                #     break
-            # print(len(dictionary[k]))
-        # exit(0)
-        # print(dictionary['0'])
 
+        # Draw the final set of unique rectangles onto the images
+        print("Class\tX\tY\tX1\tY2")
         for k in dictionary:
             dictionary[k]= unique_rows(np.array(dictionary[k]))
             for x,y,x1,y1 in dictionary[k]:
-                print(k,x,y,x1,y1)
+                print("%s\t%.1f\t%.1f\t%.1f\t%.1f\n"%(k,float(x),float(y),float(x1),float(y1)))
                 img=cv2.rectangle(img,(x,y),(x1,y1),(0,255,0),2)
-                # img = cv2.putText(img, k, (int(x)+10,int(y)+10), 1,1,(255,0,0), 2, 1)
-    """
-    count=0
-    print(prediction.shape[1])
-    for i in range(prediction.shape[0]):
-        if count==1:
-            break
-        for j in range(1000):
-            if prediction[i,j,4]>=conf_thresh:
-                x,y=box_corner[i,j,0],box_corner[i,j,1]
-                x1,y1=box_corner[i,j,2],box_corner[i,j,3]
-                img=cv2.rectangle(img,(x,y),(x1,y1),(0,255,0),2)
-        count+=1
-        cv2.imshow('',img)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-    """
+
+    # Display and Save the Image
     cv2.imshow('Detection',img)
-    cv2.imwrite('Result.jpg',img)
+    cv2.imwrite('images/Result.jpg',img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    
-img=cv2.imread('data/train/Buffy_105.jpg')
-img=cv2.resize(img,(416,416))
-img1=img.copy()
-img=torch.from_numpy(img)
-img=img.unsqueeze(0).permute(0,3,1,2)
-img/=255.
-img=img.type(torch.FloatTensor)
-model=DarkNet()
-model=model.to("cuda")
-model.load_state_dict(torch.load('checkpoints/checkpoint.epoch.2.6999.pth.tar')['state_dict'])
-prediction=model(img.cuda(),None)
-# print(prediction.shape)
-predict(img1,prediction,0.7,1)
+
+def main():
+    """ Test the model on test images """
+    checkpoint_file='checkpoints/checkpoint.epoch.2.6999.pth.tar'
+    image_file='data/train/Buffy_105.jpg'
+    img=cv2.imread(image_file)
+    img=cv2.resize(img,(416,416))
+    img1=img.copy()
+    img=torch.from_numpy(img)
+    img=img.unsqueeze(0).permute(0,3,1,2)
+    img/=255.
+    img=img.type(torch.FloatTensor)
+    model=DarkNet()
+    model=model.to("cuda")
+    model.load_state_dict(torch.load(checkpoint_file)['state_dict'])
+    prediction=model(img.cuda(),None)
+    predict(img1,prediction,0.7,1)
+
+if __name__=="__main__":
+    main()
