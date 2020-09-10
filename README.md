@@ -31,11 +31,11 @@ python train.py
 ```.bash
 python predict.py
 ```
-
+# Results
 Below are the result of training the model on a small subset of Oxford Hands Dataset. <br>
-1. Graph of loss for 500 epochs (Epochs: 6500-7000)
+##Graph of loss for 500 epochs (Epochs: 6500-7000)
 ![](images/final-loss_7000.png)<br><br>
-2. Validating the model on an image <br><br>
+##Validating the model on an image <br><br>
 &nbsp; &nbsp; &nbsp; ![](images/Result.jpg)<br><br>
 
 With a little tweaking, the model can be trained on other datasets as well. :wink: <br>
