@@ -56,7 +56,7 @@ Below are the result of training the model on a small subset of Oxford Hands Dat
 <br>
 
 ### Validating the model on an image 
-
+<br>
 <p align="center">
 <img src="images/Result.jpg">
 </p>
