@@ -43,7 +43,7 @@ With a little tweaking, the model can be trained on other datasets as well. :win
 Go ahead, pull it, train it and have fun. :smiley: <br>
 
 
-:star: Happiness should be a function without any parameters :star: <br>
+:star: Happiness should be a function without any parameters :star: <br> <br>
 Happy Coding :exclamation: :exclamation:
 
 
