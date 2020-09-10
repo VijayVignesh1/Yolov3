@@ -1,7 +1,6 @@
 # YOLOv3 
 <p align="center">
 <img  src="images/yolov3.png">
-![](images/yolov3.png)
 </p>
 This is an implementation of YOLOv3 model trained on the Oxford Hands Dataset. <br> 
 
@@ -46,11 +45,11 @@ python predict.py
 Below are the result of training the model on a small subset of Oxford Hands Dataset. <br>
 ### Graph of loss for 500 epochs (Epochs: 6500-7000)
 <p align="center">
-![](images/final-loss_7000.png)<br><br>
+<img src="images/final-loss_7000.png">
 </p>
 ### Validating the model on an image 
 <p align="center">
-![](images/Result.jpg)<br><br>
+<img src="images/Result.jpg">
 </p>
 With a little tweaking, the model can be trained on other datasets as well. :wink: <br>
 
