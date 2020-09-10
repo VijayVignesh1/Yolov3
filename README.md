@@ -1,7 +1,8 @@
 # YOLOv3 
 <p align="center">
 <img  src="images/yolov3.png">
-
+</p>
+<p align="center">
 This is an implementation of YOLOv3 model trained on the Oxford Hands Dataset. <br> 
 </p>
 
@@ -53,7 +54,9 @@ Below are the result of training the model on a small subset of Oxford Hands Dat
 <img src="images/final-loss_7000.png">
 </p>
 <br>
+
 ### Validating the model on an image 
+
 <p align="center">
 <img src="images/Result.jpg">
 </p>
