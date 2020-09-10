@@ -11,18 +11,13 @@
 1. Download the annotations and image dataset from [here](https://drive.google.com/file/d/1KHzFdt3ZpdOcvyGgmfdqZsn-8-088JO6/view?usp=sharing) and place it in the "data" folder. 
 <pre>
 Yolov3
-  |
-  |
-  |____data 
-	 |
-	 |
-	 |____train 
-		|
- 	        |____ Buffy_0.jpg 
-		|____ Buffy_0.txt 
-			.
-			.
-			.
+|___data 
+|	|___train 
+|	        |___ Buffy_0.jpg 
+|		|___ Buffy_0.txt 
+|			.
+|			.
+|			.
 </pre>
 
 2. If you already have a checkpoint file, include it in train.py. (checkpoint=checkpoint_file). <br>
