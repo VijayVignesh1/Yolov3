@@ -57,7 +57,7 @@ Below are the results of training the model on a small subset of Oxford Hands Da
 <br>
 With a little tweaking, the model can be trained on other datasets as well. :wink: <br> <br>
 
-Go ahead, pull it, train it and have fun. :smiley: <br>
+Go ahead..pull it, train it and have fun. :smiley: <br>
 
 -------------------------------------
 <p align="center">
