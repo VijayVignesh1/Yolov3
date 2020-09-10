@@ -40,7 +40,7 @@ Below are the result of training the model on a small subset of Oxford Hands Dat
 
 With a little tweaking, the model can be trained on other datasets as well. :wink: <br>
 
-Go ahead, pull it, train it and have fun. :smiley: <br>
+Go ahead, pull it, train it and have fun. :smiley: <br><br><br>
 
 
 :star: Happiness should be a function without any parameters :star: <br> <br>
