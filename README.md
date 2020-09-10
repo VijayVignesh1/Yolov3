@@ -1,14 +1,14 @@
 # YOLOv3 
 This is an implementation of YOLOv3 model trained on the Oxford Hands Dataset.
 # Steps to train
-1. Download the annotations and image dataset from [here] (https://drive.google.com/file/d/1KHzFdt3ZpdOcvyGgmfdqZsn-8-088JO6/view?usp=sharing) and place it in the "data" folder. <br>
+1. Download the annotations and image dataset from [here] :https://drive.google.com/file/d/1KHzFdt3ZpdOcvyGgmfdqZsn-8-088JO6/view?usp=sharing and place it in the "data" folder. <br>
 	data <br>
 	 |<br>
 	 |<br>
-	 |_____train <br>
+	 |_\__\_\_train <br>
 		 |<br>
-		 |____ Buffy_0.jpg <br>
-		 |____ Buffy_0.txt <br>
+		 |_\_\_\_ Buffy_0.jpg <br>
+		 |_\_\_\_ Buffy_0.txt <br>
 			....
 2. If you already have a checkpoint file, include it at train.py. (checkpoint=checkpoint_file) <br>
 3. Change the other model parameters, if necessary, at train.py file. <br>
