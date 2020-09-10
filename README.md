@@ -3,7 +3,10 @@ This is an implementation of YOLOv3 model trained on the Oxford Hands Dataset.
 # Steps to train
 1. Download the annotations and image dataset from [here](https://drive.google.com/file/d/1KHzFdt3ZpdOcvyGgmfdqZsn-8-088JO6/view?usp=sharing) and place it in the "data" folder. <br>
 <pre>
-	data 
+Yolov3
+  |
+  |
+  |____data 
 	 |
 	 |
 	 |____train 
@@ -40,6 +43,7 @@ With a little tweaking, the model can be trained on other datasets as well. :win
 Go ahead, pull it, train it and have fun. :smiley: <br>
 
 
-
+:star: Happiness should be a function without any parameters :star: <br>
+Happy Coding :exclamation: :exclamation:
 
 
