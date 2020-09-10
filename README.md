@@ -3,13 +3,12 @@
 <img  src="images/yolov3.png">
 </p>
 <p align="center">
-This is an implementation of YOLOv3 model trained on the Oxford Hands Dataset. <br> 
+<b>This is an implementation of YOLOv3 model trained on the Oxford Hands Dataset.</b> <br> 
 </p>
 
 ------------------------------
 ## Steps to train
 1. Download the annotations and image dataset from [here](https://drive.google.com/file/d/1KHzFdt3ZpdOcvyGgmfdqZsn-8-088JO6/view?usp=sharing) and place it in the "data" folder. 
-<p align="center">
 <pre>
 Yolov3
   |
@@ -25,7 +24,7 @@ Yolov3
 			.
 			.
 </pre>
-</p>
+
 2. If you already have a checkpoint file, include it in train.py. (checkpoint=checkpoint_file). <br>
 3. Change the other model parameters, if necessary, in train.py file. <br>
 4. Run the following command and watch the magic. :sunglasses: <br>
