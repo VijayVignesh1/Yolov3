@@ -8,18 +8,20 @@ This is an implementation of YOLOv3 model trained on the Oxford Hands Dataset.
 	 |
 	 |____train 
 		|
- 	        |____ Buffy_0.jpg <br>
-		|____ Buffy_0.txt <br>
-			....
+ 	        |____ Buffy_0.jpg 
+		|____ Buffy_0.txt 
+			.
+			.
+			.
 </pre>
 2. If you already have a checkpoint file, include it at train.py. (checkpoint=checkpoint_file) <br>
 3. Change the other model parameters, if necessary, at train.py file. <br>
-4. Execute "train.py" and watch the magic. B-) <br>
+4. Execute "train.py" and watch the magic. :sunglasses: <br>
 
 # Steps to Predict
 1. Change the testing image at predict.py. <br>
 2. Include the desired checkpoint to be used at predict.py. <br>
-3. Execute "predict.py" and watch the model magically detect the hands. :D <br>
+3. Execute "predict.py" and watch the model magically detect the hands. :grinning: <br>
 
 Below are the result of training the model on a small subset of Oxford Hands Dataset. <br>
 1. Graph of loss for 500 epochs (Epochs: 6500-7000)
@@ -27,9 +29,9 @@ Below are the result of training the model on a small subset of Oxford Hands Dat
 2. Validating the model on an image <br><br>
 &nbsp; &nbsp; &nbsp; ![](images/Result.jpg)<br><br>
 
-With a little tweaking, the model can be trained on other datasets as well. ;) <br>
+With a little tweaking, the model can be trained on other datasets as well. :wink: <br>
 
-Go ahead, pull it, train it and have fun. :) <br>
+Go ahead, pull it, train it and have fun. :smiley: <br>
 
 
 
