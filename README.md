@@ -17,16 +17,16 @@ Yolov3
 			.
 			.
 </pre>
-2. If you already have a checkpoint file, include it at train.py. (checkpoint=checkpoint_file) <br>
-3. Change the other model parameters, if necessary, at train.py file. <br>
+2. If you already have a checkpoint file, include it in train.py. (checkpoint=checkpoint_file) <br>
+3. Change the other model parameters, if necessary, in train.py file. <br>
 4. Run the following command and watch the magic. :sunglasses: <br>
 ```.bash
 python train.py
 ```
 
 # Steps to Predict
-1. Change the testing image at predict.py. <br>
-2. Include the desired checkpoint to be used at predict.py. <br>
+1. Change the testing image in predict.py. <br>
+2. Include the desired checkpoint to be used in predict.py. <br>
 3. Run the following command and watch the model magically detect the hands. :grinning: <br>
 ```.bash
 python predict.py
