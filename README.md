@@ -44,6 +44,6 @@ Go ahead, pull it, train it and have fun. :smiley: <br>
 
 
 :star: Happiness should be a function without any parameters :star: <br> <br>
-Happy Coding :exclamation: :exclamation:
+<b>Happy Coding</b> :exclamation: :exclamation:
 
 
