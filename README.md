@@ -8,7 +8,7 @@ This is an implementation of YOLOv3 model trained on the Oxford Hands Dataset. <
 
 ------------------------------
 ## Steps to train
-1. Download the annotations and image dataset from [here](https://drive.google.com/file/d/1KHzFdt3ZpdOcvyGgmfdqZsn-8-088JO6/view?usp=sharing) and place it in the "data" folder. <br>
+1. Download the annotations and image dataset from [here](https://drive.google.com/file/d/1KHzFdt3ZpdOcvyGgmfdqZsn-8-088JO6/view?usp=sharing) and place it in the "data" folder. 
 <p align="center">
 <pre>
 Yolov3
