@@ -1,5 +1,5 @@
 # YOLOv3 
-This is an implementation of YOLOv3 model trained on the Oxford Hands Dataset.
+This is an implementation of YOLOv3 model trained on the Oxford Hands Dataset. <br> <br>
 ![](images/yolov3.png)
 
 ## Steps to train
@@ -43,9 +43,7 @@ Below are the result of training the model on a small subset of Oxford Hands Dat
 With a little tweaking, the model can be trained on other datasets as well. :wink: <br>
 
 Go ahead, pull it, train it and have fun. :smiley: <br><br><br>
-<pre>
--------------------------------------------------------------------------------
-|:star: Happiness should be a function without any parameters :star: <br> <br> |
-|	    <b>Happy Coding</b> :exclamation: :exclamation:		       |
+
 ------------------------------------------------------------------------------
-</pre>
+:star: Happiness should be a function without any parameters :star: <br> <br>
+<b>Happy Coding</b> :exclamation: :exclamation:		       
