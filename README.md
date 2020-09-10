@@ -12,12 +12,12 @@
 <pre>
 Yolov3
 |___data 
-|	    |___train 
-|	          |___ Buffy_0.jpg 
-|		        |___ Buffy_0.txt 
-|			                .
-|			                .
-|			                .
+|     |___train 
+|           |___ Buffy_0.jpg 
+|           |___ Buffy_0.txt 
+|                     .
+|                     .
+|                     .
 </pre>
 
 2. If you already have a checkpoint file, include it in train.py. (checkpoint=checkpoint_file). <br>
