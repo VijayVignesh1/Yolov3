@@ -43,13 +43,13 @@ python predict.py
 
 ## Results
 Below are the results of training the model on a small subset of Oxford Hands Dataset. <br>
-### Graph of loss for 500 epochs (Epochs: 6500-7000)
+### Graph of loss for 500 epochs (Epochs: 6500-7000):
 <p align="center">
 <img src="images/final-loss_7000.png">
 </p>
 <br>
 
-### Validating the model on an image 
+### Validating the model on an image:
 <br>
 <p align="center">
 <img src="images/Result.jpg">
